@@ -1,12 +1,13 @@
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from typing import List
 
 from app.schemas.db_schema import RawWishlistRow
 from app.schemas.gift_reggie_schema import WishlistDTO
 
 
+
 def utc_now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def build_raw_wishlist_single_row(

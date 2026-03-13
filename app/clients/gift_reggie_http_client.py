@@ -1,4 +1,5 @@
 from typing import Any, Dict, List, Optional
+from datetime import datetime
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -43,38 +44,62 @@ class WishlistApiClient:
             headers["X-Access-Token"] = self._token
         return headers
 
-    def _fetch_wishlists_page(
+    def _get_wishlists_page(
         self,
         *,
         page: int,
         rows: int,
         email: Optional[str] = None,
         customer_id: Optional[int] = None,
+        updated: Optional[datetime] = None,
     ) -> List[Dict[str, Any]]:
         url = f"{self._base_url}/wishlists"
 
-        params: Dict[str, Any] = {"page": page, "rows": rows}
+        params: Dict[str, Any] = {
+            "page": page,
+            "rows": rows
+        }
+
         if email:
             params["email"] = email
+
         if customer_id is not None:
             params["customer_id"] = customer_id
 
-        response = self._session.get(url, headers=self._headers, params=params, timeout=self._timeout)
+        if updated is not None:
+            params["updated"] = updated.strftime("%Y-%m-%dT%H:%M:%S")
+
+        response = self._session.get(
+            url,
+            headers=self._headers, 
+            params=params, 
+            timeout=self._timeout,
+        )
 
         if response.status_code >= 400:
             raise RuntimeError(f"Wishlist API error {response.status_code}: {response.text[:500]}")
+        
+        try:
+            data = response.json()
+        except ValueError as exc:
+            raise RuntimeError(
+                f"Wishlist API returned non-JSON response with status {response.status_code}: "
+                f"{response.text[:500]}"
+            ) from exc
+        
 
-        data = response.json()
         #print(json.dumps(data, indent=2, ensure_ascii=False, default=str))
         #print("\nIncpmiong Response Complete\n")
 
-        # Accept both: list OR {"wishlists": list}
         if isinstance(data, list):
             return data
+
         if isinstance(data, dict) and isinstance(data.get("wishlists"), list):
             return data["wishlists"]
 
         raise RuntimeError(f"Unexpected response shape from /wishlists: {type(data)}")
+
+
 
     def get_all_wishlists(
         self,
@@ -82,17 +107,19 @@ class WishlistApiClient:
         rows: int,
         email: Optional[str] = None,
         customer_id: Optional[int] = None,
+        updated: Optional[datetime] = None,
         max_pages: int = 5,
     ) -> List[Dict[str, Any]]:
         page = 1
         all_items: List[Dict[str, Any]] = []
 
         while page <= max_pages:
-            batch = self._fetch_wishlists_page(
+            batch = self._get_wishlists_page(
                 page=page,
                 rows=rows,
                 email=email,
                 customer_id=customer_id,
+                updated=updated,
             )
 
             if not batch:

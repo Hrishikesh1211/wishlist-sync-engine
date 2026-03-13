@@ -45,9 +45,6 @@ class RawWishlistsRepository:
         ON CONFLICT (wishlist_id)
         DO UPDATE SET
             email = EXCLUDED.email,
-            first_name = EXCLUDED.first_name,
-            last_name = EXCLUDED.last_name,
-            source_created_at = EXCLUDED.source_created_at,
             source_updated_at = EXCLUDED.source_updated_at,
             last_seen_at = EXCLUDED.last_seen_at,
             synced_at = EXCLUDED.synced_at,
