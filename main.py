@@ -1,10 +1,13 @@
 import json
+import uuid
 from app.config.gift_reggie_config import load_gift_reggie_config
 from app.clients.gift_reggie_http_client import WishlistApiClient
-from app.services.validator import WishlistValidator
+from app.repository.last_sync_repository import LastSyncRepository
+from app.services.sync_state_service import SyncStateService, SYNC_NAME
+from app.services.validator_service import WishlistValidator
+from app.schemas.db_schema import LastSyncRow
 
 from dataclasses import asdict
-from datetime import datetime, timedelta, UTC
 
 from app.config.db_connection_config import load_db_config
 
@@ -16,8 +19,15 @@ from app.repository.raw_wishlists_org_handle_repository import RawWishlistOrgHan
 from app.transforms.raw_wishlist_org_handle_transform import build_raw_wishlist_org_handle_rows_data
 
 
+
+
+
+
 def main() -> None:
 
+    run_id = uuid.uuid4()
+    current_time = utc_now()
+    print(f"Starting run {run_id} at time {current_time}")
     # -----------------------------
     # Load configs
     # -----------------------------
@@ -34,13 +44,17 @@ def main() -> None:
 
     raw_wishlists_repository = RawWishlistsRepository(db_connection)
     raw_wishlist_org_handles_repository = RawWishlistOrgHandlesRepository(db_connection)
+    last_sync_repository = LastSyncRepository(db_connection)
 
+
+    sync_state_service = SyncStateService(last_sync_repository)
 
     # -----------------------------
     # Fetch API data from Gift Reggie
     # -----------------------------
 
-    query_parameter_updated_after = datetime.now(UTC) - timedelta(hours=15)
+    #query_parameter_updated_after = datetime.now(UTC) - timedelta(hours=15)
+    query_parameter_updated_after = sync_state_service.get_api_updated_after()
     
     incoming_raw_items = gift_reggie_client.get_all_wishlists(
         rows=gift_reggie_config.default_rows,
@@ -62,7 +76,6 @@ def main() -> None:
 
     if not GR_validation_result.valid:
         print("No valid wishlists returned from API")
-        return
 
     # -----------------------------
     # For Testing Purpose
@@ -87,9 +100,7 @@ def main() -> None:
     # Transform into DB rows
     # -----------------------------
     
-
-    run_id = 1 #
-    current_time = utc_now()
+    
 
     raw_wishlist_table_rows = build_raw_wishlist_rows_data(
         wishlists=GR_validation_result.valid,
@@ -102,6 +113,28 @@ def main() -> None:
         run_id=run_id,
         synced_at=current_time,
     )
+
+    max_source_updated_at = None
+
+    for wishlist in GR_validation_result.valid:
+        if wishlist.updated is None:
+            continue
+        if (
+            max_source_updated_at is None
+            or wishlist.updated > max_source_updated_at
+        ):
+            max_source_updated_at = wishlist.updated
+
+    if max_source_updated_at is None:
+        max_source_updated_at = current_time
+
+    print(f"Max source updated timestamp from this run: {max_source_updated_at}")
+
+    sync_row = LastSyncRow(
+    sync_name=SYNC_NAME,
+    last_run_id=run_id,
+    last_run_time=max_source_updated_at,
+)
 
     #Testing Purpose
     print(f"first-table rows formed = {len(raw_wishlist_table_rows)}")
@@ -139,13 +172,15 @@ def main() -> None:
                 run_id=run_id,
             )
 
+        last_sync_repository.upsert_last_sync(sync_row)
+
         db_connection.commit()
 
     except Exception:
         db_connection.rollback()
         raise
     finally:
-        db_client.connection.close()
+        db_connection.close()
 
 
 if __name__ == "__main__":

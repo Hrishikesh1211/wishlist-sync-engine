@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
+from uuid import UUID
 
 
 @dataclass(frozen=True)
@@ -17,7 +18,7 @@ class RawWishlistRow:
     source_updated_at: Optional[datetime]
     last_seen_at: datetime
     synced_at: datetime
-    last_run_id: int
+    last_run_id: UUID
 
 
 @dataclass(frozen=True)
@@ -32,4 +33,10 @@ class RawWishlistOrgHandleRow:
     last_seen_at: datetime
     removed_at: Optional[datetime]
     synced_at: datetime
-    last_run_id: int
+    last_run_id: UUID
+
+@dataclass(frozen=True)
+class LastSyncRow:
+    sync_name: str
+    last_run_id: UUID
+    last_run_time: datetime

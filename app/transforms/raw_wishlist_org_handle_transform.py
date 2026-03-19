@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import List
+from uuid import UUID
 
 from app.schemas.db_schema import RawWishlistOrgHandleRow
 from app.schemas.gift_reggie_schema import WishlistDTO
@@ -7,7 +8,7 @@ from app.schemas.gift_reggie_schema import WishlistDTO
 
 def build_raw_wishlist_org_handle_rows_for_single_wishlist(
     wishlist: WishlistDTO,
-    run_id: int,
+    run_id: UUID,
     synced_at: datetime,
 ) -> List[RawWishlistOrgHandleRow]:
     rows: List[RawWishlistOrgHandleRow] = []
@@ -35,7 +36,7 @@ def build_raw_wishlist_org_handle_rows_for_single_wishlist(
 
 def build_raw_wishlist_org_handle_rows_data(
     wishlists: List[WishlistDTO],
-    run_id: int,
+    run_id: UUID,
     synced_at: datetime,
 ) -> List[RawWishlistOrgHandleRow]:
     """

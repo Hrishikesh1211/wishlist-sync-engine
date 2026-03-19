@@ -1,5 +1,6 @@
 from datetime import datetime, UTC
 from typing import List
+from uuid import UUID
 
 from app.schemas.db_schema import RawWishlistRow
 from app.schemas.gift_reggie_schema import WishlistDTO
@@ -12,7 +13,7 @@ def utc_now() -> datetime:
 
 def build_raw_wishlist_single_row(
     wishlist: WishlistDTO,
-    run_id: int,
+    run_id: UUID,
     synced_at: datetime,
 ) -> RawWishlistRow:
     """
@@ -36,7 +37,7 @@ def build_raw_wishlist_single_row(
 
 def build_raw_wishlist_rows_data(
     wishlists: List[WishlistDTO],
-    run_id: int,
+    run_id: UUID,
     synced_at: datetime,
 ) -> List[RawWishlistRow]:
     """

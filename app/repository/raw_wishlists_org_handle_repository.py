@@ -1,5 +1,6 @@
 from dataclasses import asdict
 from typing import List
+from uuid import UUID
 
 from app.schemas.db_schema import RawWishlistOrgHandleRow
 
@@ -64,7 +65,7 @@ class RawWishlistOrgHandlesRepository:
         active_org_handles: List[str],
         removed_at,
         synced_at,
-        run_id: int,
+        run_id: UUID,
     ) -> None:
         """
         Mark org handles as removed for a wishlist if they are no longer present
@@ -83,7 +84,7 @@ class RawWishlistOrgHandlesRepository:
             """
             params = {
                 "wishlist_id": wishlist_id,
-                "active_org_handles": tuple(active_org_handles),
+                "active_org_handles": active_org_handles,
                 "removed_at": removed_at,
                 "synced_at": synced_at,
                 "last_run_id": run_id,
