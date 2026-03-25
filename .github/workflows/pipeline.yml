@@ -1,9 +1,9 @@
 name: Wishlist Sync Pipeline
 
 on:
-  workflow_dispatch:   # manual run
+  workflow_dispatch:
   schedule:
-    - cron: "*/10 * * * *"   # every 10 minutes
+    - cron: "*/10 * * * *"
 
 jobs:
   run-pipeline:
@@ -21,7 +21,7 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Run pipeline
+      - name: Run full pipeline
         env:
           API_BASE_URL: ${{ secrets.API_BASE_URL }}
           API_TOKEN: ${{ secrets.API_TOKEN }}
@@ -32,5 +32,8 @@ jobs:
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           DB_NAME: ${{ secrets.DB_NAME }}
           DB_PORT: ${{ secrets.DB_PORT }}
+          DB_SSLMODE: require
 
-        run: python main.py
+        run: |
+          python main.py
+          python sync_raw_to_so.py
